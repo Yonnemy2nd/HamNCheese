@@ -88,7 +88,7 @@ repositories {
     maven { // Hwyla
         url = "https://maven.tehnut.info"
     }
-    maven { // BOP
+    maven { // AppleSkin, BOP
         url = "https://cursemaven.com"
     }
     maven { // Sonar
@@ -114,6 +114,8 @@ dependencies {
     runtimeOnly fg.deobf("mcp.mobius.waila:Hwyla:${project.hwylaVersion}")
 
     implementation fg.deobf("curse.maven:biomes-o-plenty-220318:${project.bopVersion}")
+
+    implementation fg.deobf("curse.maven:AppleSkin-248787:${project.appleSkinVersion}")
 
     runtimeOnly fg.deobf("com.github.Ocelot5836:Sonar:${project.sonar}")
     compileOnly "com.github.Ocelot5836:Sonar:${project.sonar}:api"

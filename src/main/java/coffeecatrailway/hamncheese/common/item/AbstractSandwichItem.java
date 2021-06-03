@@ -24,6 +24,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.Constants;
+import squeek.appleskin.api.food.IFood;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
  * @author CoffeeCatRailway
  * Created: 19/03/2021
  */
-public class AbstractSandwichItem extends Item
+public class AbstractSandwichItem extends Item implements IFood
 {
     public static final String TAG_INGREDIENTS = "Ingredients";
     public static final String TAG_TOASTED = "Toasted";
@@ -113,6 +114,25 @@ public class AbstractSandwichItem extends Item
                     entity.addEffect(new EffectInstance(pair.getFirst()));
         }
         return stack;
+    }
+
+    @Nullable
+    @Override
+    public Food getFoodProperties()
+    {
+        return null;
+    }
+
+    @Override
+    public int getHunger(ItemStack stack, PlayerEntity player)
+    {
+        return this.getFood(stack).getNutrition();
+    }
+
+    @Override
+    public float getSaturationIncrement(ItemStack stack, PlayerEntity player)
+    {
+        return this.getFood(stack).getSaturationModifier();
     }
 
     private Food getFood(ItemStack stack)
