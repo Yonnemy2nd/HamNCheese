@@ -1,73 +1,43 @@
-import groovy.json.JsonOutput
-import groovy.json.JsonSlurper
-
-buildscript {
-    repositories {
-        maven { url = 'https://files.minecraftforge.net/maven' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '4.1.+', changing: true
-    }
-}
+//import groovy.json.JsonOutput
+//import groovy.json.JsonSlurper
 
 plugins {
-    id 'com.github.johnrengelman.shadow' version '4.0.4'
+    id 'dev.architectury.loom' version '0.7.2-SNAPSHOT'
+    id 'io.github.juuxel.loom-quiltflower' version '1.1.1'
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
+    id 'maven-publish'
 }
 
-apply plugin: 'net.minecraftforge.gradle'
-apply plugin: 'eclipse'
-apply plugin: 'maven-publish'
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
 version = project.version
 group = 'coffeecatrailway.' + project.modId
 archivesBaseName = project.modId
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(8) // Mojang ships Java 8 to end users, so your mod should target Java 8.
+loom {
+    // use this if you are using the official mojang mappings
+    // and want loom to stop warning you about their license
+    silentMojangMappingsLicense()
 
-println('Java: ' + System.getProperty('java.version') + ' JVM: ' + System.getProperty('java.vm.version') + '(' + System.getProperty('java.vendor') + ') Arch: ' + System.getProperty('os.arch'))
-minecraft {
-    mappings channel: project.mappingsChannel.toString(), version: project.mappingsVersion.toString()
+//    mixinConfig = [""]
 
-    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+    dataGen {
+        mod project.modId
+    }
 
     runs {
         client {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-
-            mods {
-                hamncheese {
-                    source sourceSets.main
-                }
-            }
+            runDir "run/client"
         }
-
         server {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
-
-            mods {
-                hamncheese {
-                    source sourceSets.main
-                }
-            }
+            runDir "run/server"
         }
+    }
 
+    launches {
         data {
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', ''
-            property 'forge.logging.console.level', 'debug'
-
-            args '--mod', '' + project.modId, '--all', '--output', '"' + rootProject.file('src/generated/resources/') + '"', '--existing', '"' + rootProject.file('src/main/resources') + '"'
-
-            mods {
-                hamncheese {
-                    source sourceSets.main
-                }
-            }
+            arg "--existing", file('src/main/resources').absolutePath
         }
     }
 }
@@ -77,9 +47,7 @@ configurations {
 }
 
 repositories {
-    jcenter()
     mavenLocal()
-
     maven { // JustEnoughItems
         url = "https://dvs1.progwml6.com/files/maven/"
     }
@@ -105,30 +73,36 @@ sourceSets.main.resources {
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${project.mcVersion}-${project.forgeVersion}"
+    // to change the versions see the gradle.properties file
+    minecraft "com.mojang:minecraft:${project.mcVersion}"
 
-    runtimeOnly fg.deobf("mezz.jei:jei-${project.jeiVersion}")
-    compileOnly fg.deobf("mezz.jei:jei-${project.jeiVersion}:api")
+    // choose what mappings you want to use here
+    // leave this uncommented if you want to use mojang's official mappings
+    mappings minecraft.officialMojangMappings()
 
-    compileOnly fg.deobf("mcjty.theoneprobe:TheOneProbe-1.16:${project.topVersion}:api")
-    runtimeOnly fg.deobf("mcjty.theoneprobe:TheOneProbe-1.16:${project.topVersion}")
+    // uncomment this if you want to use yarn mappings
+    // mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
 
-    implementation fg.deobf("curse.maven:biomes-o-plenty-220318:${project.bopVersion}")
-    implementation fg.deobf("curse.maven:druidcraft-340991:${project.druidcraftVersion}")
-    implementation fg.deobf("curse.maven:the-twilight-forest-227639:${project.twilightVersion}")
+    // uncomment this if you want to use mcp mappings
+    //mappings "de.oceanlabs.mcp:mcp_snapshot:20201028-1.16.3"
 
-    runtimeOnly fg.deobf("curse.maven:catalogue-459701:3335979")
+    // your forge dependency, this is **required** when using Forge Loom in forge mode!
+    forge "net.minecraftforge:forge:${project.mcVersion}-${project.forgeVersion}"
 
-    runtimeOnly fg.deobf("com.github.Ocelot5836:Sonar:${project.sonar}")
-    compileOnly "com.github.Ocelot5836:Sonar:${project.sonar}:api"
+    modCompileOnly "mezz.jei:jei-${project.jeiVersion}:api"
+    modRuntime "mezz.jei:jei-${project.jeiVersion}"
+
+    modCompileOnly "mcjty.theoneprobe:TheOneProbe-1.16:${project.topVersion}:api"
+    modRuntime "mcjty.theoneprobe:TheOneProbe-1.16:${project.topVersion}"
+
+    modImplementation "curse.maven:biomes-o-plenty-220318:${project.bopVersion}"
+    modImplementation "curse.maven:druidcraft-340991:${project.druidcraftVersion}"
+    modImplementation "curse.maven:the-twilight-forest-227639:${project.twilightVersion}"
+
+    modRuntime "curse.maven:catalogue-459701:3335979"
+
+    modImplementation "com.github.Ocelot5836:Sonar:${project.sonar}"
     shade "com.github.Ocelot5836:Sonar:${project.sonar}"
-}
-
-shadowJar {
-    configurations = [project.configurations.shade]
-    relocate 'io.github.ocelot', 'io.github.ocelot.lib'
-
-    exclude(["**/*.ase", "**/*.bbmodel", "**/assets/biomesoplenty", "**/assets/twilightforest", "**/assets/druidcraft"])
 }
 
 processResources {
@@ -146,11 +120,41 @@ processResources {
     }
 
     // Minify json resources
-    doLast {
-        fileTree(dir: outputs.files.asPath, include: "**/*.json").each {
-            File file -> file.text = JsonOutput.toJson(new JsonSlurper().parse(file))
-        }
+//    doLast {
+//        fileTree(dir: outputs.files.asPath, include: "**/*.json").each {
+//            File file -> file.text = JsonOutput.toJson(new JsonSlurper().parse(file))
+//        }
+//    }
+}
+
+shadowJar {
+    configurations = [project.configurations.shade]
+    relocate 'io.github.ocelot.sonar', "io.github.ocelot.${project.modId}.lib"
+
+    exclude(["**/*.ase", "**/*.bbmodel", "**/assets/biomesoplenty", "**/assets/twilightforest", "**/assets/druidcraft"])
+}
+
+tasks.withType(JavaCompile).configureEach {
+    // ensure that the encoding is set to UTF-8, no matter what the system default is
+    // this fixes some edge cases with special characters not displaying correctly
+    // see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
+    // If Javadoc is generated, this must be specified in that task too.
+    it.options.encoding = "UTF-8"
+
+    // The Minecraft launcher currently installs Java 8 for users, so your mod probably wants to target Java 8 too
+    // JDK 9 introduced a new way of specifying this that will make sure no newer classes or methods are used.
+    // We'll use that if it's available, but otherwise we'll use the older option.
+    def targetVersion = 8
+    if (JavaVersion.current().isJava9Compatible()) {
+        it.options.release = targetVersion
     }
+}
+
+java {
+    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+    // if it is present.
+    // If you remove this line, sources will not be generated.
+    withSourcesJar()
 }
 
 jar {
@@ -165,8 +169,4 @@ jar {
                 "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
     }
-    enabled = false
-    dependsOn(shadowJar { classifier = null })
 }
-
-jar.finalizedBy('reobfJar')
